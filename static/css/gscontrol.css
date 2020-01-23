@@ -1,0 +1,183 @@
+.flatpickr-fix > .flatpickr-wrapper {
+	width: 100%;
+	padding-right: 60px;
+	margin-right: -60px;
+}
+
+.flatpickr-fix > .flatpickr-wrapper > input {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+.flatpickr-fix2 > .flatpickr-wrapper {
+	width: 100%;
+}
+
+.mt-05 {
+	margin-top: 0.125rem !important;
+}
+
+.pointer {
+	cursor: pointer;
+}
+
+.thumbnail {
+	width: 150px;
+	height: 150px;
+	border-radius: .2rem;
+	background-position: center;
+	background-size: cover;
+	background-repeat: no-repeat;
+}
+
+.thumbnail-mini {
+	display: inline-block;
+	width: 70px;
+	height: 70px;
+	border-radius: .2rem;
+	background-position: center;
+	background-size: cover;
+	background-repeat: no-repeat;
+}
+
+.thumbnail-micro {
+	display: inline-block;
+	width: 46px;
+	height: 46px;
+	border-radius: .2rem;
+	background-position: center;
+	background-size: cover;
+	background-repeat: no-repeat;
+}
+
+.arrow_right_micro {
+	display: inline-block;
+	width: 23px;
+	height: 46px;
+}
+
+.arrow_right_micro img {
+	float: left;
+	max-width: 100%;
+	margin-top: 12px;
+}
+
+.vote_thumbnail {
+	max-height: 150px;
+}
+
+.zoom {
+	width: 100%;
+	height: 100%;
+	opacity: 0;
+	background-position: center;
+	background-repeat: no-repeat;
+	-webkit-transition: opacity 0.3s ease-in-out;
+	-moz-transition: opacity 0.3s ease-in-out;
+	-ms-transition: opacity 0.3s ease-in-out;
+	-o-transition: opacity 0.3s ease-in-out;
+	transition: opacity 0.3s ease-in-out;
+}
+
+.zoom:hover {
+	opacity: 1;
+	background-color: rgba(0,0,0,0.2);
+	background-image: url('/static/img/zoom.png');
+}
+
+.zoom-mini:hover {
+	background-size: 30px;
+}
+
+.planned_remaining {
+	border: 0;
+	background-color: #f1f0ef !important;
+	font-size: 0.875em;
+}
+
+.planned_remaining::-webkit-input-placeholder {
+	color: #4f4f4f;
+}
+
+.planned_remaining::-moz-placeholder {
+	color: #4f4f4f;
+}
+
+.planned_remaining:-ms-input-placeholder {
+	color: #4f4f4f;
+}
+
+.planned_remaining:-moz-placeholder {
+	color: #4f4f4f;
+}
+
+.planned_calendar {
+	border: 0;
+	background-color: #f1f0ef !important;
+	font-size: 0.875em;
+}
+
+.planned_calendar::-webkit-input-placeholder {
+	color: #4f4f4f;
+}
+
+.planned_calendar::-moz-placeholder {
+	color: #4f4f4f;
+}
+
+.planned_calendar:-ms-input-placeholder {
+	color: #4f4f4f;
+}
+
+.planned_calendar:-moz-placeholder {
+	color: #4f4f4f;
+}
+
+.smaller-font {
+	color: #4f4f4f;
+	font-size: 0.875em;
+}
+
+.my_challenges_tab, .planned_tab {
+	color: #4f4f4f;
+	font-size: 0.875em;
+}
+
+.my_challenges_tab:hover, .planned_tab:hover {
+	color: #000;
+}
+
+.my_challenges_tab.active {
+	border-bottom: 1px dashed #dee2e6 !important;
+}
+
+.challenge-entry-votes {
+	bottom: 1px;
+	left: 1px;
+}
+
+.vote_info {
+	margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+	border-bottom: 1px dashed #dee2e6 !important;
+}
+
+.image_picker_selector > li {
+	margin-right: 0 !important;
+}
+
+.image_picker_selector > li > .thumbnail {
+	width: auto;
+	height: auto;
+	max-width: 316px;
+	margin-left: 6px;
+}
+
+.join_form .image_picker_selector > li > .thumbnail {
+	max-width: 220px;
+	margin-left: 3px;
+}
+
+.image_picker_selector > li > .thumbnail > img {
+	max-width: 100%;
+}

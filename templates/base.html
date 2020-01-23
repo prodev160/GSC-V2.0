@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>{% block title %}{% endblock %} - GuruShots Control</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/filepond.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/filepond-plugin-image-preview.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/flatpickr.min.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/airbnb.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/image-picker.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/gscontrol.css') }}">
+	<script type="text/javascript" src="{{ url_for('static', filename='js/jquery-3.3.1.min.js') }}"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='js/flatpickr.js') }}"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='js/image-picker.min.js') }}"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='js/imagesloaded.pkgd.min.js') }}"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='js/masonry.pkgd.min.js') }}"></script>
+</head>
+<body class="pb-5">
+	<div class="modal fade" id="loading-modal" tabindex="-1" role="dialog">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<object class="ml-auto mr-auto" data="{{ url_for('static', filename='img/loading.svg') }}" type="image/svg+xml"></object>
+		</div>
+	</div>
+
+	<nav class="navbar navbar-expand-md navbar-light bg-light">
+		<a href="/" class="navbar-brand">GuruShots Control</a>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+
+		<div class="collapse navbar-collapse" id="navigation">
+			<ul class="navbar-nav mr-auto">
+				<li class="nav-item">
+					<a href="/" class="nav-link{% if request.path == '/' %} active{% endif %}">Users</a>
+				</li>
+				<li class="nav-item">
+					<a href="/my/" class="nav-link{% if request.path == '/my/' %} active{% endif %}" onclick="$('#loading-modal').modal()">My Challenges</a>
+				</li>
+				<li class="nav-item">
+					<a href="/open/" class="nav-link{% if request.path == '/open/' %} active{% endif %}" onclick="$('#loading-modal').modal()">Open Challenges</a>
+				</li>
+			</ul>
+			{% if page_data %}
+				<span class="badge badge-light ml-auto">{{ page_data.settings.permissions.PHOTO_SWAP }} swaps</span>
+				<span class="badge badge-light">{{ page_data.settings.permissions.EXPOSURE_AUTOFILL }} fills</span>
+				<span class="badge badge-light mr-3">{{ page_data.settings.permissions.KEY }} keys</span>
+			{% endif %}
+			{% if active_user %}
+				<ul class="navbar-nav{% if not page_data %} ml-auto{% endif %}">
+					<li class="nav-item dropdown">
+						<a href="#" class="nav-link dropdown-toggle" role="button" data-toggle="dropdown">{{ active_user.email }}</a>
+						<div class="dropdown-menu dropdown-menu-right">
+							<a href="/logout/" class="dropdown-item">Log out</a>
+						</div>
+					</li>
+				</ul>
+			{% endif %}
+		</div>
+	</nav>
+
+	{% for message in get_flashed_messages() %}
+		<div class="container">
+			<div class="row">
+				<div class="col-sm-6 offset-sm-3">
+					<div class="alert alert-info alert-dismissible fade show mt-5" role="alert">
+						{{ message }}
+						<button type="button" class="close" data-dismiss="alert">
+							<span>&times;</span>
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	{% endfor %}
+
+	{% block content %}{% endblock %}
+
+	<script type="text/javascript" src="{{ url_for('static', filename='js/filepond-plugin-file-validate-type.js') }}"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='js/filepond-plugin-file-validate-size.js') }}"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='js/filepond-plugin-image-validate-size.js') }}"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='js/filepond-plugin-image-preview.js') }}"></script>
+	<script type="text/javascript" src="{{ url_for('static', filename='js/filepond.js') }}"></script>
+
+	<script type="text/javascript">
+		$(function() {
+			$('.confirm').click(function() {
+				return window.confirm('Are you sure?');
+			});
+		});
+	</script>
+
+	<script type="text/javascript">
+		$(function() {
+			$('[data-toggle="tooltip"]').tooltip();
+		});
+	</script>
+
+	{% block scripts %}{% endblock %}
+</body>
+</html>

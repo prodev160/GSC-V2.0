@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block title %}Open Challenges{% endblock %}
+
+{% block content %}
+	{% if items %}
+		<div class="container mt-5">
+			<div class="row">
+				<div class="col-sm-10 offset-sm-1">
+					<table class="table">
+						<thead>
+							<tr>
+								<th scope="col">#</th>
+								<th scope="col">Time remaining</th>
+								<th scope="col">Thumbnail</th>
+								<th scope="col">Details</th>
+								<th scope="col">Controls</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for item in items %}
+								<tr>
+									<th scope="row">{{ loop.index }}</th>
+									<td>
+										<span id="timer-days-{{ item.id }}" class="badge badge-secondary"></span> <span id="timer-{{ item.id }}" class="badge badge-dark"></span>
+									</td>
+									<td>
+										<div class="thumbnail pointer" style="background-image: url('https://photos.gurushots.com/unsafe/500x0/{{ item.member_id }}/3_{{ item.image_id }}.jpg');" onclick="$('#thumbnail-{{ item.id }}-modal').modal()">
+											<div class="zoom"></div>
+											{% for photo in top_photos %}
+												{% if item.id == photo.challenge_id %}
+													<div class="thumbnail thumbnail-mini position-relative" style="background-image: url('https://photos.gurushots.com/unsafe/500x0/{{ photo.member_id }}/3_{{ photo.id }}.jpg'); right: -79px; bottom: 71px; cursor: pointer;" onclick="$('#thumbnail-top-{{ photo.id }}-modal').modal(); event.stopPropagation();">
+														<div class="zoom zoom-mini"></div>
+														<span class="badge badge-dark position-absolute challenge-entry-votes">{{ photo.votes }}</span>
+													</div>
+												{% endif %}
+											{% endfor %}
+										</div>
+									</td>
+									<td>
+										<p><small><strong>"{{ item.title }}"</strong></small></p>
+
+										{% if (item.member.submit_state == 'join_unlock') or (item.type == 'speed') or (item.type == 'exhibition') %}
+											<hr class="w-25 ml-0 mt-4">
+											{% if item.type == 'speed' %}
+												<span class="badge badge-pill badge-warning">Speed</span>
+											{% endif %}
+											{% if item.type == 'exhibition' %}
+												<span class="badge badge-pill badge-primary">Exhibition</span>
+											{% endif %}
+											{% if item.member.submit_state == 'join_unlock' %}
+												<span class="badge badge-pill badge-info">Locked</span>
+											{% endif %}
+										{% endif %}
+									</td>
+									<td>
+										{% if item.can_join %}
+											<div class="btn-group btn-group-sm" role="group">
+												<a href="/open/join/{{ item.id }}/" class="btn btn-success" onclick="$('#loading-modal').modal()">Join now</a>
+												<a href="/open/join_later/{{ item.id }}/" class="btn btn-warning" onclick="$('#loading-modal').modal()">Join later</a>
+											</div>
+										{% endif %}
+									</td>
+								</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	{% else %}
+		<center class="mt-5">
+			<p>No open challenges available.</p>
+		</center>
+	{% endif %}
+
+	{% for photo in top_photos %}
+		<div class="modal fade" id="thumbnail-top-{{ photo.id }}-modal" tabindex="-1" role="dialog">
+			<div class="modal-dialog modal-dialog-centered" role="document">
+				<img class="ml-auto mr-auto" src="https://photos.gurushots.com/unsafe/500x0/{{ photo.member_id }}/3_{{ photo.id }}.jpg">
+			</div>
+		</div>
+	{% endfor %}
+
+	{% if items %}
+		{% for item in items %}
+			<div class="modal fade" id="thumbnail-{{ item.id }}-modal" tabindex="-1" role="dialog">
+				<div class="modal-dialog modal-dialog-centered" role="document">
+					<img class="ml-auto mr-auto" src="https://photos.gurushots.com/unsafe/500x0/{{ item.member_id }}/3_{{ item.image_id }}.jpg">
+				</div>
+			</div>
+
+			<script type="text/javascript">
+				var countDownDate{{ item.id }} = new Date({{ item.close_time }} * 1000).getTime();
+
+				var x{{ item.id }} = setInterval(function() {
+					var now = new Date().getTime();
+					var distance = countDownDate{{ item.id }} - now;
+					var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+					var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+					var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+					var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+					document.getElementById('timer-days-{{ item.id }}').innerHTML = days + ' days';
+					document.getElementById('timer-{{ item.id }}').innerHTML = hours + 'h ' + minutes + 'm ' + seconds + 's';
+
+					if (distance < 0) {
+						clearInterval(x{{ item.id }});
+						$('#timer-days-{{ item.id }}').remove();
+						document.getElementById('timer-{{ item.id }}').innerHTML = 'ENDED';
+					}
+				}, 1000);
+			</script>
+		{% endfor %}
+	{% endif %}
+{% endblock %}

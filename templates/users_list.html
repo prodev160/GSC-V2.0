@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Users{% endblock %}
+
+{% block content %}
+	{% if users %}
+		<div class="container mt-5">
+			<div class="row">
+				<div class="col-sm-10 offset-sm-1">
+					<p><a href="/add/">Add</a> another user account or <a href="/vote_for_all/">Vote for all</a> users' photos.</p>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-sm-10 offset-sm-1">
+					<table class="table table-striped">
+						<thead>
+							<tr>
+								<th scope="col">#</th>
+								<th scope="col">E-mail</th>
+								<th scope="col">Controls</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for user in users %}
+								<tr>
+									<th scope="row">{{ loop.index }}</th>
+									<td>{% if user.is_active %}<span class="badge badge-success">active</span> {% endif %}{{ user.email }}</td>
+									<td>
+										{% if user.is_active == False %}
+											<a href="/login/{{ user.id }}/" class="btn btn-success btn-sm">Log in</a>
+										{% else %}
+											<a href="/logout/" class="btn btn-primary btn-sm">Log out</a>
+										{% endif %}
+
+										<a href="/remove/{{ user.id }}/" class="btn btn-danger btn-sm confirm">Remove</a>
+									</td>
+								</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	{% else %}
+		<center class="mt-5">
+			<p>You haven't <a href="/add/">added</a> any user accounts yet.</p>
+		</center>
+	{% endif %}
+{% endblock %}

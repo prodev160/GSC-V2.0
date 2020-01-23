@@ -1,0 +1,75 @@
+{% if scheduled_swaps %}
+	<table class="table">
+		<thead>
+			<tr>
+				<th scope="col" class="border-top-0">#</th>
+				<th scope="col" class="border-top-0">Thumbnail</th>
+				<th scope="col" class="border-top-0">Details</th>
+				<th scope="col" class="border-top-0">Scheduled on</th>
+				<th scope="col" class="border-top-0">Controls</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for swap in scheduled_swaps %}
+				<tr>
+					<th scope="row">{{ loop.index }}</th>
+					<td>
+						{% if active_challenges %}
+							{% for item in active_challenges %}
+								{% if item.id|string == swap.challenge_id %}
+									<div class="thumbnail thumbnail-mini" style="background-image: url('https://photos.gurushots.com/unsafe/500x0/{{ item.member_id }}/3_{{ item.image_id }}.jpg');">
+									</div>
+								{% endif %}
+							{% endfor %}
+						{% endif %}
+					</td>
+					<td class="pt-2">
+						{% if active_challenges %}
+							{% for item in active_challenges %}
+								{% if item.id|string == swap.challenge_id %}
+									<div class="mb-1">
+										<small><strong>"{{ item.title }}"</strong></small>
+									</div>
+								{% endif %}
+							{% endfor %}
+						{% endif %}
+
+						<div class="thumbnail-micro mr-1" style="background-image: url('https://photos.gurushots.com/unsafe/500x0/{{ page_data.member.id }}/3_{{ swap.old_img_id }}.jpg');"></div>
+
+						<div class="arrow_right_micro">
+							<img src="{{ url_for('static', filename='img/arrow_right.png') }}">
+						</div>
+
+						<div class="thumbnail-micro mr-1" style="background-image: url('https://photos.gurushots.com/unsafe/500x0/{{ page_data.member.id }}/3_{{ swap.new_img_id }}.jpg');"></div>
+					</td>
+					<td>
+						<span id="unixtime-swap-{{ swap.id }}" class="badge badge-secondary"></span>
+
+						<script type="text/javascript">
+							function formatDate(date) {
+								var monthNames = [
+									'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'
+								];
+								
+								var year = date.getFullYear();
+								var monthIndex = date.getMonth();
+								var day = date.getDate();
+								var hours = ('0' + date.getHours()).slice(-2);
+								var minutes = ('0' + date.getMinutes()).slice(-2);
+
+								return monthNames[monthIndex] + ' ' + day + ', ' + year + ' at ' + hours + ':' + minutes;
+							}
+
+							$('#unixtime-swap-{{ swap.id }}').text(formatDate(new Date({{ swap.unixtime }} * 1000)));
+						</script>
+					</td>
+					<td>
+						<a href="/my/scheduled/swap/{{ swap.id }}/" class="btn btn-danger btn-sm confirm">Cancel</a>
+					</td>
+				</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+{% else %}
+	<p class="mt-5 text-center">You haven't scheduled any swaps yet.</p>
+{% endif %}

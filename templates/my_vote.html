@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+
+{% block title %}Vote{% endblock %}
+
+{% block content %}
+	<div id="found_alert" class="alert alert-info alert-dismissible collapse w-50 mx-auto mt-5" role="alert">
+		Another saved user's photo is found. It has been selected automatically.
+		<button type="button" class="close" data-dismiss="alert">
+			<span>&times;</span>
+		</button>
+	</div>
+
+	<div class="container mt-5">
+		<div class="row">
+			<div class="col-sm-10 offset-sm-1 text-center">
+				<div class="row vote_info">
+					<div class="col-sm-6">
+						<div class="float-right">
+							{% for active_challenge in active_challenges %}
+								{% if active_challenge.id == voting_challenge.challenge.id %}
+									<img class="img-fluid rounded vote_thumbnail" src="https://photos.gurushots.com/unsafe/500x0/{{ active_challenge.member_id }}/3_{{ active_challenge.image_id }}.jpg">
+								{% endif %}
+							{% endfor %}
+						</div>
+					</div>
+					<div class="col-sm-6">
+						<div class="float-left text-left">
+							{% for active_challenge in active_challenges %}
+								{% if active_challenge.id == voting_challenge.challenge.id %}
+									<p class="mt-2 mb-2">"{{ active_challenge.title }}"</p>
+
+									<span id="timer-days" class="badge badge-secondary"></span> <span id="timer" class="badge badge-dark"></span>
+
+									{% if (active_challenge.type == 'speed') or (active_challenge.type == 'exhibition') %}
+										<hr class="w-25 mt-3 ml-0">
+										{% if active_challenge.type == 'speed' %}
+											<span class="badge badge-pill badge-warning">Speed</span>
+										{% endif %}
+										{% if active_challenge.type == 'exhibition' %}
+											<span class="badge badge-pill badge-primary">Exhibition</span>
+										{% endif %}
+									{% endif %}
+								{% endif %}
+							{% endfor %}
+
+							<script type="text/javascript">
+								var countDownDate = new Date({{ voting_challenge.challenge.close_time }} * 1000).getTime();
+
+								var x = setInterval(function() {
+									var now = new Date().getTime();
+									var distance = countDownDate - now;
+									var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+									var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+									var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+									var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+									document.getElementById('timer-days').innerHTML = days + ' days';
+									document.getElementById('timer').innerHTML = hours + 'h ' + minutes + 'm ' + seconds + 's';
+
+									if (distance < 0) {
+										clearInterval(x);
+										$('#timer-days').remove();
+										document.getElementById('timer').innerHTML = 'ENDED';
+									}
+								}, 1000);
+							</script>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="container mw-100">
+		<div class="row">
+			<div class="col">
+				<form method="POST">
+					<select name="images" multiple="multiple" data-limit="{{ voting_challenge.voting.vote_limit }}" class="image-picker" required="required">
+						<option value=""></option>
+						{% for image in voting_challenge.images %}
+							<option data-img-src="https://photos.gurushots.com/unsafe/500x0/{{ image.member_id }}/3_{{ image.id }}.jpg" value="{{ image.id }}"></option>
+						{% endfor %}
+					</select>
+					<div id="loadmore_container" class="mt-1 mx-auto text-center">
+						<input id="photos_count" type="hidden" name="" value="100">
+						<a href="#" onclick="loadMore()" class="btn btn-outline-primary">Load more</a>
+					</div>
+					<hr class="my-5">
+					<div class="mx-auto text-center">
+						<button type="submit" id="vote_button" class="btn btn-success" disabled="disabled">Vote now</button>
+					</div>
+				</form>
+
+				<script type="text/javascript">
+					$(document).ready(function(){
+						$('#loading-modal').modal({
+							backdrop: 'static',
+							keyboard: false
+						});
+
+						$('select.image-picker').imagepicker({
+							limit_reached: function(){
+								alert('Limit reached.');
+							}
+						});
+
+						$('.image_picker_selector').imagesLoaded(function(){
+							$('.image_picker_selector').masonry({
+								itemSelector: 'li',
+								columnWidth: 328
+							});
+
+							$('#loading-modal').modal('hide');
+						});
+					});
+				</script>
+
+				<script type="text/javascript">
+					function loadMore() {
+						$('#loading-modal').modal({
+							backdrop: 'static',
+							keyboard: false
+						});
+
+						var photos_count = document.querySelector('#photos_count');
+						var select = document.querySelector('select.image-picker');
+						var ul = document.querySelector('ul.image_picker_selector');
+						var xhr = new XMLHttpRequest();
+						xhr.open('GET', '/my/vote_preload/{{ voting_challenge.challenge.id }}/{{ voting_challenge.challenge.url }}/', false);
+						xhr.send();
+
+						images = JSON.parse(xhr.responseText);
+						new_images_count = 0;
+
+						for(var i in images) {
+							var element = document.querySelector('option[value="' + images[i].id + '"]');
+
+							if (typeof(element) == 'undefined' || element == null) {
+								new_images_count = new_images_count + 1;
+								var option = document.createElement('option');
+								option.setAttribute('data-img-src', 'https://photos.gurushots.com/unsafe/500x0/' + images[i].member_id + '/3_' + images[i].id + '.jpg');
+								option.setAttribute('value', images[i].id);
+								select.appendChild(option);
+							}
+						}
+
+						var scroll_position = $(document).scrollTop();
+
+						if (new_images_count == 0) {
+							setTimeout(function(){
+								$('html, body').animate({
+									scrollTop: scroll_position
+								}, 0);
+
+								$('#loading-modal').modal('hide');
+							}, 1000);
+						} else {
+							$('select.image-picker').imagepicker({
+								limit_reached: function(){
+									alert('Limit reached.');
+								}
+							});
+
+							$('html, body').animate({
+								scrollTop: scroll_position
+							}, 0);
+
+							$('.image_picker_selector').imagesLoaded(function(){
+								$('.image_picker_selector').masonry({
+									itemSelector: 'li',
+									columnWidth: 328
+								});
+
+								$('html, body').animate({
+									scrollTop: scroll_position
+								}, 0);
+
+								$('#loading-modal').modal('hide');
+							});
+						}
+
+						photos_count.value = +photos_count.value + 50;
+
+						if (+photos_count.value > 299) {
+							document.querySelector('#loadmore_container').remove();
+						}
+
+						var found = false;
+
+						{% for image_id in inactive_users_image_ids %}
+						var option{{ image_id }} = document.querySelector('option[value="{{ image_id }}"]');
+
+						if (typeof(option{{ image_id }}) != 'undefined' && option{{ image_id }} != null) {
+							option{{ image_id }}.selected = true;
+							$("select.image-picker").data('picker').sync_picker_with_select();
+							$('#vote_button').removeAttr('disabled');
+							found = true;
+						}
+						{% endfor %}
+
+						if (found == true) {
+							$('#found_alert').slideDown();
+						}
+					}
+				</script>
+
+				<script type="text/javascript">
+					$('select.image-picker').change(function() {
+						$('#vote_button').removeAttr('disabled');
+					});
+				</script>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+{% block scripts %}
+		<script type="text/javascript">
+			window.onload = function(){
+				var found = false;
+
+				{% for image_id in inactive_users_image_ids %}
+				var option{{ image_id }} = document.querySelector('option[value="{{ image_id }}"]');
+
+				if (typeof(option{{ image_id }}) != 'undefined' && option{{ image_id }} != null) {
+					option{{ image_id }}.selected = true;
+					$("select.image-picker").data('picker').sync_picker_with_select();
+					$('#vote_button').removeAttr('disabled');
+					found = true;
+				}
+				{% endfor %}
+
+				if (found == true) {
+					$('#found_alert').slideDown();
+				}
+			};
+		</script>
+{% endblock %}

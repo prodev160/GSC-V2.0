@@ -1,0 +1,78 @@
+{% if scheduled_votes %}
+	<table class="table">
+		<thead>
+			<tr>
+				<th scope="col" class="border-top-0">#</th>
+				<th scope="col" class="border-top-0">Thumbnail</th>
+				<th scope="col" class="border-top-0">Details</th>
+				<th scope="col" class="border-top-0">Scheduled on</th>
+				<th scope="col" class="border-top-0">Controls</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for vote in scheduled_votes %}
+				<tr>
+					<th scope="row">{{ loop.index }}</th>
+					<td>
+						{% if active_challenges %}
+							{% for item in active_challenges %}
+								{% if item.id|string == vote.challenge_id %}
+									<div class="thumbnail thumbnail-mini" style="background-image: url('https://photos.gurushots.com/unsafe/500x0/{{ item.member_id }}/3_{{ item.image_id }}.jpg');">
+									</div>
+								{% endif %}
+							{% endfor %}
+						{% endif %}
+					</td>
+					<td class="pt-2">
+						{% if active_challenges %}
+							{% for item in active_challenges %}
+								{% if item.id|string == vote.challenge_id %}
+									<div class="mb-1">
+										<small>
+											<strong>"{{ item.title }}"</strong><br>
+											<span>Vote for {{ vote.count }} photos</span>
+										</small>
+									</div>
+								{% endif %}
+							{% endfor %}
+						{% endif %}
+
+						{% if scheduled_vote_images %}
+							{% for image in scheduled_vote_images %}
+								{% if image.planned_vote_id == vote.id %}
+									<div class="thumbnail-micro mr-1" style="background-image: url('https://photos.gurushots.com/unsafe/500x0/{{ image.image_member_id }}/3_{{ image.image_id }}.jpg');"></div>
+								{% endif %}
+							{% endfor %}
+						{% endif %}
+					</td>
+					<td>
+						<span id="unixtime-vote-{{ vote.id }}" class="badge badge-secondary"></span>
+
+						<script type="text/javascript">
+							function formatDate(date) {
+								var monthNames = [
+									'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'
+								];
+								
+								var year = date.getFullYear();
+								var monthIndex = date.getMonth();
+								var day = date.getDate();
+								var hours = ('0' + date.getHours()).slice(-2);
+								var minutes = ('0' + date.getMinutes()).slice(-2);
+
+								return monthNames[monthIndex] + ' ' + day + ', ' + year + ' at ' + hours + ':' + minutes;
+							}
+
+							$('#unixtime-vote-{{ vote.id }}').text(formatDate(new Date({{ vote.unixtime }} * 1000)));
+						</script>
+					</td>
+					<td>
+						<a href="/my/scheduled/vote/{{ vote.id }}/" class="btn btn-danger btn-sm confirm">Cancel</a>
+					</td>
+				</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+{% else %}
+	<p class="mt-5 text-center">You haven't scheduled any votes yet.</p>
+{% endif %}

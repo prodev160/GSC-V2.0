@@ -1,0 +1,143 @@
+{% if active_challenges %}
+	<table class="table">
+		<thead>
+			<tr>
+				<th scope="col" class="border-top-0">#</th>
+				<th scope="col" class="border-top-0">Time remaining</th>
+				<th scope="col" class="border-top-0">Thumbnail</th>
+				<th scope="col" class="border-top-0">Details</th>
+				<th scope="col" class="border-top-0">Controls</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for challenge in active_challenges %}
+				<tr>
+					<th scope="row">{{ loop.index }}</th>
+					<td>
+						<span id="timer-days-{{ challenge.id }}" class="badge badge-secondary"></span> <span id="timer-{{ challenge.id }}" class="badge badge-dark"></span>
+
+						<script type="text/javascript">
+							var countDownDate{{ challenge.id }} = new Date({{ challenge.close_time }} * 1000).getTime();
+
+							var x{{ challenge.id }} = setInterval(function() {
+								var now = new Date().getTime();
+								var distance = countDownDate{{ challenge.id }} - now;
+								var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+								var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+								var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+								var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+								document.getElementById('timer-days-{{ challenge.id }}').innerHTML = days + ' days';
+								document.getElementById('timer-{{ challenge.id }}').innerHTML = hours + 'h ' + minutes + 'm ' + seconds + 's';
+
+								if (distance < 0) {
+									clearInterval(x{{ challenge.id }});
+									$('#timer-days-{{ challenge.id }}').remove();
+									document.getElementById('timer-{{ challenge.id }}').innerHTML = 'ENDED';
+								}
+							}, 1000);
+						</script>
+					</td>
+					<td>
+						<div class="thumbnail" style="background-image: url('https://photos.gurushots.com/unsafe/500x0/{{ challenge.member_id }}/3_{{ challenge.image_id }}.jpg');">
+							{% for photo in top_photos %}
+								{% if challenge.id == photo.challenge_id %}
+									<div class="thumbnail thumbnail-mini position-relative" style="background-image: url('https://photos.gurushots.com/unsafe/500x0/{{ photo.member_id }}/3_{{ photo.id }}.jpg'); margin-top: 79px; margin-left: 79px; cursor: pointer;" onclick="$('#thumbnail-top-{{ photo.challenge_id }}-modal').modal()">
+										<div class="zoom zoom-mini"></div>
+										<span class="badge badge-dark position-absolute challenge-entry-votes">{{ photo.votes }}</span>
+									</div>
+								{% endif %}
+							{% endfor %}
+						</div>
+					</td>
+					<td>
+						<div>
+							<small><strong>"{{ challenge.title }}"</strong></small>
+						</div>
+						<div class="clearfix mt-05 pb-2">
+							<div class="float-left mr-2">
+								<small>Exposure:</small>
+							</div>
+							<div class="float-left" style="padding-top: 0.125rem;">
+								<div class="progress" style="width: 150px; height: 20px;">
+									<div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ challenge.member.ranking.total.exposure }}%">{{ challenge.member.ranking.total.exposure }}%</div>
+								</div>
+							</div>
+						</div>
+						<hr class="w-25 mt-2 mb-2 ml-0">
+						<div>
+							{% if challenge.member.ranking.total.level_name == 'ALL STAR' %}
+								<span class="badge badge-pill badge-dark">#{{ challenge.member.ranking.total.rank }} All star</span>
+							{% elif challenge.member.ranking.total.level_name == 'ELITE' %}
+								<span class="badge badge-pill badge-primary">#{{ challenge.member.ranking.total.rank }} Elite</span>
+							{% elif challenge.member.ranking.total.level_name == 'PREMIER' %}
+								<span class="badge badge-pill badge-danger">#{{ challenge.member.ranking.total.rank }} Premier</span>
+							{% elif challenge.member.ranking.total.level_name == 'SKILLED' %}
+								<span class="badge badge-pill badge-success">#{{ challenge.member.ranking.total.rank }} Skilled</span>
+							{% elif challenge.member.ranking.total.level_name == 'POPULAR' %}
+								<span class="badge badge-pill badge-info">#{{ challenge.member.ranking.total.rank }} Popular</span>
+							{% else %}
+								<span class="badge badge-pill badge-secondary">#{{ challenge.member.ranking.total.rank }} Not ranked</span>
+							{% endif %}
+
+							<span class="badge badge-pill badge-secondary">Votes: {{ challenge.member.ranking.total.votes }}</span>
+
+							<span class="badge badge-pill badge-warning">
+								Participating:
+								{% for photo_participating in photos_participating %}
+									{% if challenge.id == photo_participating.challenge_id %}
+										{{ photo_participating.photos_participating }}
+									{% endif %}
+								{% endfor %}
+							</span>
+						</div>
+						<div class="mt-1">
+							{% for entry in challenge.member.ranking.entries %}
+								<div class="thumbnail thumbnail-micro position-relative" style="background-image: url('https://photos.gurushots.com/unsafe/500x0/{{ entry.member_id }}/3_{{ entry.id }}.jpg');">
+									<span class="badge badge-dark position-absolute challenge-entry-votes">{{ entry.votes }}</span>
+								</div>
+							{% endfor %}
+						</div>
+					</td>
+					<td>
+						<div class="row">
+							<div class="btn-group btn-group-sm" role="group">
+								<a href="/my/vote/{{ challenge.id }}/{{ challenge.url }}/" class="btn btn-primary" onclick="$('#loading-modal').modal()">Vote now</a>
+								<!-- <a href="/my/vote_later/{{ challenge.id }}/{{ challenge.url }}/" class="btn btn-warning" onclick="$('#loading-modal').modal()">Vote later</a> -->
+								<button type="button" class="btn btn-warning" data-toggle="modal" data-target="#vote-later-{{ challenge.id }}">Auto Vote</button>
+							</div>
+						</div>
+
+						<div class="row mt-2">
+							<div class="btn-group btn-group-sm" role="group">
+								<a href="/my/swap/{{ challenge.id }}/" class="btn btn-success" onclick="$('#loading-modal').modal()">Swap now</a>
+								<a href="/my/auto_swap/{{ challenge.id }}/" class="btn btn-warning" onclick="$('#loading-modal').modal()">Auto Swap</a>
+							</div>
+						</div>
+
+						{% if challenge.id|string in exposure_votes_list %}
+							{% for vote in exposure_votes %}
+								{% if vote.challenge_id|string == challenge.id|string %}
+									<div class="row mt-2">
+										<div class="btn-group btn-group-sm" role="group">
+											<button type="button" class="btn btn-info" data-toggle="modal" data-target="#autovote-{{ challenge.id }}">Vote on {{ vote.vote_percent }}%</button>
+											<a href="/my/autovote/disable/{{ challenge.id }}/" class="btn btn-secondary confirm">Disable</a>
+										</div>
+									</div>
+								{% endif %}
+							{% endfor %}
+						{% else %}
+							<div class="row mt-2">
+								<div class="btn-group btn-group-sm" role="group">
+									<button type="button" class="btn btn-info" data-toggle="modal" data-target="#autovote-{{ challenge.id }}">Enable auto-voting</button>
+								</div>
+							</div>
+						{% endif %}
+					</td>
+				</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+{% else %}
+	<p class="mt-5 text-center">You don't have any active challenges yet.</p>
+{% endif %}

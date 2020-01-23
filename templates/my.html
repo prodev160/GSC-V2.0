@@ -1,0 +1,366 @@
+{% extends 'base.html' %}
+
+{% block title %}My Challenges{% endblock %}
+
+{% block content %}
+	<div class="container mt-5">
+		<div class="row">
+			<div class="col-sm-10 offset-sm-1">
+				<div class="row">
+					<div class="w-100">
+						<ul class="nav nav-tabs nav-fill" role="tablist">
+							<li class="nav-item">
+								<a class="nav-link active my_challenges_tab" id="list_tab" data-toggle="tab" href="#list" role="tab">Active challenges</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link my_challenges_tab" id="scheduled_joins_tab" data-toggle="tab" href="#scheduled_joins" role="tab">Scheduled joins</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link my_challenges_tab" id="scheduled_swaps_tab" data-toggle="tab" href="#scheduled_swaps" role="tab">Scheduled swaps</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link my_challenges_tab" id="scheduled_votes_tab" data-toggle="tab" href="#scheduled_votes" role="tab">Scheduled votes</a>
+							</li>
+						</ul>
+						<div class="tab-content">
+							<div class="tab-pane fade show active" id="list" role="tabpanel">
+								{% include 'my_active_challenges.html' %}
+							</div>
+							<div class="tab-pane fade" id="scheduled_joins" role="tabpanel">
+								{% include 'my_scheduled_joins.html' %}
+							</div>
+							<div class="tab-pane fade" id="scheduled_swaps" role="tabpanel">
+								{% include 'my_scheduled_swaps.html' %}
+							</div>
+							<div class="tab-pane fade" id="scheduled_votes" role="tabpanel">
+								{% include 'my_scheduled_votes.html' %}
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+{% endblock %}
+
+{% block scripts %}
+	<script type="text/javascript">
+		var url = document.location.toString();
+		if (url.match('#')) {
+			$('.nav-tabs a[href="#' + url.split('#')[1] + '"]').tab('show');
+		}
+
+		$('.nav-tabs a').on('shown.bs.tab', function(e){
+			window.location.hash = e.target.hash;
+		});
+	</script>
+
+	{% if active_challenges %}
+		{% for challenge in active_challenges %}
+			<div class="modal fade" id="vote-later-{{ challenge.id }}" tabindex="-1" role="dialog">
+				<div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h6 class="modal-title">{{ challenge.title }}</h6>
+							<button type="button" class="close" data-dismiss="modal">
+								<span>&times;</span>
+							</button>
+						</div>
+						<div class="modal-body">
+							<form method="POST" action="/my/vote_later/">
+								<input type="hidden" name="challenge_id" value="{{ challenge.id }}">
+								<input type="hidden" name="challenge_url" value="{{ challenge.url }}">
+								<input type="hidden" name="count" id="count-{{ challenge.id }}" value="10">
+
+								<div class="later_block">
+									<ul class="nav nav-tabs nav-fill" role="tablist">
+										<li class="nav-item">
+											<a class="nav-link active planned_tab" id="as_initial_vote_tab-{{ challenge.id }}" data-toggle="tab" href="#as_initial_vote-{{ challenge.id }}" role="tab">As an initial vote</a>
+										</li>
+										<li class="nav-item">
+											<a class="nav-link planned_tab" id="by_base_exposure_tab-{{ challenge.id }}" data-toggle="tab" href="#by_base_exposure-{{ challenge.id }}" role="tab">By a baseline figure according to exposure %</a>
+										</li>
+										<li class="nav-item">
+											<a class="nav-link planned_tab" id="by_remaining_tab-{{ challenge.id }}" data-toggle="tab" href="#by_remaining-{{ challenge.id }}" role="tab">By time remaining</a>
+										</li>
+										<li class="nav-item">
+											<a class="nav-link planned_tab" id="by_calendar_tab-{{ challenge.id }}" data-toggle="tab" href="#by_calendar-{{ challenge.id }}" role="tab">By calendar</a>
+										</li>
+									</ul>
+									<div class="tab-content">
+										<div class="tab-pane fade show active" id="as_initial_vote-{{ challenge.id }}" role="tabpanel">
+											<div class="form-group text-center col-sm-10 offset-sm-1">
+												<label class="col-form-label">Number of photos to vote for:</label>
+												<input type="number" name="planned_initial" id="initial-{{ challenge.id }}" class="form-control text-center mx-auto" 
+													oninput="document.getElementById('count-{{ challenge.id }}').value=this.value" placeholder="10" value="10" min="1" max="100" required="required">
+											</div>
+										</div>
+										<div class="tab-pane fade" id="by_base_exposure-{{ challenge.id }}" role="tabpanel">
+											<div class="form-group text-center col-sm-10 offset-sm-1">
+												<label for="percent-{{ challenge.id }}" class="col-form-label">When exposure bonus goes below:</label>
+												<div class="input-group w-50 mx-auto">
+													{% if challenge.id|string in exposure_votes_list %}
+														{% for vote in exposure_votes %}
+															{% if vote.challenge_id|string == challenge.id|string %}
+															<input type="number" name="" class="form-control text-center" id="percent-{{ challenge.id }}" placeholder="{{ vote.vote_percent }}" value="{{ vote.vote_percent }}" min="0" max="99" required="required">
+															{% endif %}
+														{% endfor %}
+													{% else %}
+													<input type="number" name="" class="form-control text-center" id="percent-{{ challenge.id }}" placeholder="95" value="95" min="0" max="99" required="required">
+													{% endif %}													
+													<div class="input-group-append">
+														<div class="input-group-text">%</div>
+													</div>
+												</div>
+											</div>
+											<div class="form-group text-center col-sm-10 offset-sm-1">
+												<label class="col-form-label">Number of photos to vote for:</label>
+												{% if challenge.id|string in exposure_votes_list %}
+													{% for vote in exposure_votes %}
+														{% if vote.challenge_id|string == challenge.id|string %}
+														<input type="number" class="form-control text-center w-50 mx-auto" 
+															oninput="document.getElementById('count-{{ challenge.id }}').value=this.value" 
+															placeholder="{{ vote.vote_count }}" value="{{ vote.vote_count }}" min="1" max="100" required="required">
+
+															<script type="text/javascript">
+																document.getElementById('count-{{ challenge.id }}').value="{{ vote.vote_count }}";
+															</script>
+														{% endif %}
+													{% endfor %}
+												{% else %}
+												<input type="number" class="form-control text-center w-50 mx-auto" 
+													oninput="document.getElementById('count-{{ challenge.id }}').value=this.value" placeholder="10" value="10" min="1" max="100" required="required">
+												{% endif %}
+											</div>
+											{% if challenge.id|string in exposure_votes_list %}
+												{% for vote in exposure_votes %}
+													{% if vote.challenge_id|string == challenge.id|string %}
+													<div class="form-group text-center col-sm-10 offset-sm-1">
+														<a href="/my/autovote/disable/{{ challenge.id }}/" class="btn btn-secondary confirm col-sm-10 offset-sm-1 text-center w-50 mx-auto">Disable</a>
+													</div>
+													{% endif %}
+												{% endfor %}
+											{% endif %}
+										</div>
+										<div class="tab-pane fade" id="by_remaining-{{ challenge.id }}" role="tabpanel">
+											<div class="form-group text-center col-sm-10 offset-sm-1" style="margin-top: 1rem; margin-bottom: 0">
+												<div class="input-group">
+													<input type="number" name="planned_remaining_days" id="planned_remaining_days-{{ challenge.id }}" class="mt-1 form-control text-center planned_remaining" placeholder="Select planned remaining days" value="0" min="0" max="" required="">
+													<div class="input-group-append">
+														<div class="input-group-text mt-1 planned_remaining">days</div>
+													</div>
+												</div>
+												<div class="input-group flatpickr-fix">
+													<input type="text" name="" id="planned_remaining-{{ challenge.id }}" class="mt-1 form-control text-center planned_remaining" placeholder="Select planned remaining time" readonly="readonly" required="">
+													<div class="input-group-append">
+														<div class="input-group-text mt-1 planned_remaining">hours</div>
+													</div>
+												</div>
+											</div>
+											<div class="form-group text-center col-sm-10 offset-sm-1">
+												<label class="col-form-label">Number of photos to vote for:</label>
+												<input type="number" class="form-control text-center mx-auto" 
+													oninput="document.getElementById('count-{{ challenge.id }}').value=this.value" placeholder="10" value="10" min="1" max="100" required="required">
+											</div>			
+										</div>
+										<div class="tab-pane fade" id="by_calendar-{{ challenge.id }}" role="tabpanel">
+											<div class="form-group text-center col-sm-10 offset-sm-1" style="margin-top: 1rem; margin-bottom: 0">
+												<div class="input-group flatpickr-fix2">
+													<input type="text" name="" id="planned_calendar-{{ challenge.id }}" class="mt-1 form-control text-center planned_calendar" placeholder="Select planned date and time" readonly="readonly" required="">
+												</div>
+											</div>
+											<div class="form-group text-center col-sm-10 offset-sm-1">
+												<label class="col-form-label">Number of photos to vote for:</label>
+												<input type="number" class="mt-1 form-control text-center mx-auto" 
+													oninput="document.getElementById('count-{{ challenge.id }}').value=this.value" placeholder="10" value="10" min="1" max="100" required="required">
+											</div>
+										</div>
+									</div>
+									{% for active_challenge in active_challenges %}
+										{% if active_challenge.id == challenge.id %}
+											<input type="hidden" name="close_time" value="{{ active_challenge.close_time }}">
+
+											<script type="text/javascript">
+												var countDownDate{{ challenge.id }} = new Date({{ active_challenge.close_time }} * 1000).getTime();
+
+												var x{{ challenge.id }} = setInterval(function() {
+													var now = new Date().getTime();
+													var distance = countDownDate{{ challenge.id }} - now;
+													var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+
+													var maxDays = document.querySelector('#planned_remaining_days-{{ challenge.id }}');
+													maxDays.setAttribute('max', days);
+												}, 1000);
+											</script>
+										{% endif %}
+									{% endfor %}
+								</div>
+								<hr class="w-100 mt-4">
+								<div class="form-group text-center">
+									<button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+									<button type="submit" class="btn btn-warning">Schedule a vote</button>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<script type="text/javascript">
+				$('#planned_remaining-{{ challenge.id }}').flatpickr({
+					dateFormat: 'H:i',
+					noCalendar: true,
+					enableTime: true,
+					time_24hr: true,
+					defaultDate: '00:15',
+					altInput: true,
+					altFormat: 'H:i',
+					static: true,
+				});
+			</script>
+
+			{% for active_challenge in active_challenges %}
+				{% if active_challenge.id == challenge.id %}
+					<script type="text/javascript">
+						$('#planned_calendar-{{ challenge.id }}').flatpickr({
+							dateFormat: 'U',
+							minDate: new Date(),
+							maxDate: '{{ active_challenge.close_time }}',
+							enableTime: true,
+							time_24hr: true,
+							altInput: true,
+							altFormat: 'F j, Y at H:i',
+							locale: {
+								firstDayOfWeek: 1,
+							},
+							static: true,
+						});
+					</script>
+				{% endif %}
+			{% endfor %}
+
+			<script type="text/javascript">
+				$('a#as_initial_vote_tab-{{ challenge.id }}').on('shown.bs.tab', function(e){
+					$('#initial-{{ challenge.id }}').attr('name', 'planned_initial');
+					$('#percent-{{ challenge.id }}').attr('name', '');
+					$('#planned_remaining-{{ challenge.id }}').attr('name', '');
+					$('#planned_calendar-{{ challenge.id }}').attr('name', '');
+				});
+			</script>
+
+			<script type="text/javascript">
+				$('a#by_base_exposure_tab-{{ challenge.id }}').on('shown.bs.tab', function(e){
+					$('#initial-{{ challenge.id }}').attr('name', '');
+					$('#percent-{{ challenge.id }}').attr('name', 'percent');
+					$('#planned_remaining-{{ challenge.id }}').attr('name', '');
+					$('#planned_calendar-{{ challenge.id }}').attr('name', '');
+				});
+			</script>
+
+			<script type="text/javascript">
+				$('a#by_remaining_tab-{{ challenge.id }}').on('shown.bs.tab', function(e){
+					$('#initial-{{ challenge.id }}').attr('name', '');
+					$('#percent-{{ challenge.id }}').attr('name', '');
+					$('#planned_remaining-{{ challenge.id }}').attr('name', 'planned_remaining');
+					$('#planned_calendar-{{ challenge.id }}').attr('name', '');
+				});
+			</script>
+
+			<script type="text/javascript">
+				$('a#by_calendar_tab-{{ challenge.id }}').on('shown.bs.tab', function(e){
+					$('#initial-{{ challenge.id }}').attr('name', '');
+					$('#percent-{{ challenge.id }}').attr('name', '');
+					$('#planned_remaining-{{ challenge.id }}').attr('name', '');
+					$('#planned_calendar-{{ challenge.id }}').attr('name', 'planned_calendar');
+				});
+			</script>
+
+			{% if challenge.id|string in exposure_votes_list %}
+				{% for vote in exposure_votes %}
+					{% if vote.challenge_id|string == challenge.id|string %}
+						<div class="modal fade" id="autovote-{{ challenge.id }}" tabindex="-1" role="dialog">
+							<div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+								<div class="modal-content">
+									<div class="modal-header">
+										<h6 class="modal-title">{{ challenge.title }}</h6>
+										<button type="button" class="close" data-dismiss="modal">
+											<span>&times;</span>
+										</button>
+									</div>
+									<div class="modal-body">
+										<form method="POST" action="/my/autovote/update/">
+											<input type="hidden" name="challenge_id" value="{{ challenge.id }}">
+											<div class="form-group text-center">
+												<label for="percent-{{ challenge.id }}" class="col-form-label">When exposure bonus goes below:</label>
+												<div class="input-group w-50 mx-auto">
+													<input type="number" name="percent" class="form-control text-center" id="percent-{{ challenge.id }}" placeholder="{{ vote.vote_percent }}" value="{{ vote.vote_percent }}" min="0" max="99" required="required">
+													<div class="input-group-append">
+														<div class="input-group-text">%</div>
+													</div>
+												</div>
+											</div>
+											<div class="form-group text-center">
+												<label for="count-{{ challenge.id }}" class="col-form-label">Number of photos to vote for:</label>
+												<input type="number" name="count" class="form-control text-center w-50 mx-auto" id="count-{{ challenge.id }}" placeholder="{{ vote.vote_count }}" value="{{ vote.vote_count }}" min="1" max="100" required="required">
+											</div>
+											<hr class="w-25 mt-4">
+											<div class="form-group text-center">
+												<button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+												<button type="submit" class="btn btn-info">Update</button>
+											</div>
+										</form>
+									</div>
+								</div>
+							</div>
+						</div>
+					{% endif %}
+				{% endfor %}
+			{% else %}
+				<div class="modal fade" id="autovote-{{ challenge.id }}" tabindex="-1" role="dialog">
+					<div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+						<div class="modal-content">
+							<div class="modal-header">
+								<h6 class="modal-title">{{ challenge.title }}</h6>
+								<button type="button" class="close" data-dismiss="modal">
+									<span>&times;</span>
+								</button>
+							</div>
+							<div class="modal-body">
+								<form method="POST" action="/my/autovote/enable/">
+									<input type="hidden" name="challenge_id" value="{{ challenge.id }}">
+									<input type="hidden" name="challenge_url" value="{{ challenge.url }}">
+									<div class="form-group text-center">
+										<label for="percent-{{ challenge.id }}" class="col-form-label">When exposure bonus goes below:</label>
+										<div class="input-group w-50 mx-auto">
+											<input type="number" name="percent" class="form-control text-center" id="percent-{{ challenge.id }}" placeholder="95" value="95" min="0" max="99" required="required">
+											<div class="input-group-append">
+												<div class="input-group-text">%</div>
+											</div>
+										</div>
+									</div>
+									<div class="form-group text-center">
+										<label for="count-{{ challenge.id }}" class="col-form-label">Number of photos to vote for:</label>
+										<input type="number" name="count" class="form-control text-center w-50 mx-auto" id="count-{{ challenge.id }}" placeholder="10" value="10" min="1" max="100" required="required">
+									</div>
+									<hr class="w-25 mt-4">
+									<div class="form-group text-center">
+										<button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+										<button type="submit" class="btn btn-info">Enable</button>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
+				</div>
+			{% endif %}
+		{% endfor %}
+	{% endif %}
+
+	{% for photo in top_photos %}
+		<div class="modal fade" id="thumbnail-top-{{ photo.challenge_id }}-modal" tabindex="-1" role="dialog">
+			<div class="modal-dialog modal-dialog-centered" role="document">
+				<img class="ml-auto mr-auto" src="https://photos.gurushots.com/unsafe/500x0/{{ photo.member_id }}/3_{{ photo.id }}.jpg">
+			</div>
+		</div>
+	{% endfor %}
+{% endblock %}
