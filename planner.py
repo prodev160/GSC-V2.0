@@ -85,7 +85,7 @@ gs_challenge_submit_url = gs_base_url + '/rest/submit_to_challenge'
 gs_swap_url = gs_base_url + '/rest/swap'
 gs_vote_data_url = gs_base_url + '/rest/get_vote_data'
 gs_vote_submit_url = gs_base_url + '/rest/submit_votes'
-gs_headers = {'X-Requested-With': 'XMLHttpRequest', 'X-Env': 'WEB', 'X-Api-Version': '4'}
+gs_headers = {'X-Requested-With': 'XMLHttpRequest', 'X-Env': 'WEB', 'X-Api-Version': '8'}
 tokens_verified = False
 
 def verify_tokens():
@@ -209,6 +209,7 @@ def vote():
             if json.loads(voting_list.text)['success']:
                 data = {
                     'c_id': vote.challenge_id,
+                    'c_token': '03AOLTBLRTGUYgYJnrxxxXTs3IdLq1pH3Qt5KSifNcfMz0HzdSKQYDpoag-eYaqUQaFbiKm8Yft1sBBCBE9iled0FV7HOINASN3RJCzGfnQZbhWqqaGQ3MqxIs_T2vo7zPIpH7gMmxoaF2YFhuKW8rPQCNauy6H1FQBATyHLtX0YRZongGJkCqkQL-J5N03wi-y6pgL8vIldNXUllBtwq9Hz8HbkdLoK-XU8d1Px_V_7mDpCS8pQyC1qT1Km1-NFZUHKhwVxlbZ-TBFPGRGuynNx-tkHc-0aLgZ8kMGGfkPEjkHb_aGJ9p7iEK2n94N6iLIqOzl_O2QlJ9U6J9NLnV7xTq7N4dfMrgPJuJ-T7hZWeaVXVnDKUqjDiZFVlKohcQbGyNczhgDrGcoHuUfrrcZrLk8s-ZU1_bXtQe9N0o5PGg8MtTpGd8yy-l99Fsnyn--3w623nKFDAj',
                 }
                 # images = session.query(PlannedVoteImage).filter(PlannedVoteImage.planned_vote_id == vote.id).order_by(PlannedVoteImage.image_index).all()
                 i = 0
@@ -219,8 +220,9 @@ def vote():
                 #             i += 1
                 for user_image in users_image_ids:
                     for voting_image in json.loads(voting_list.text)['images']:
-                        if user_image == voting_image['id']:
-                            data['image_ids[' + str(i) + ']'] = user_image
+                        if user_image == voting_image['token']:
+                            data['tokens[' + str(i) + ']'] = user_image
+                            data['viewed_tokens[' + str(i) + ']'] = user_image
                             i += 1
                 images = json.loads(voting_list.text)['images']
                 random_count = int(vote.count)
@@ -228,9 +230,10 @@ def vote():
                     random_count = len(images) - i
                 random_numbers = random.sample(range(len(images)), random_count)
                 for number in random_numbers:
-                    data['image_ids[' + str(i) + ']'] = images[number]['id']
+                    data['tokens[' + str(i) + ']'] = images[number]['token']
+                    data['viewed_tokens[' + str(i) + ']'] = images[number]['token']
                     i += 1
-                if 'image_ids[0]' in data:
+                if 'tokens[0]' in data:
                     request_session.post(gs_vote_submit_url, data=data, headers=gs_token_headers)
                 # for image in images:
                 #     session.delete(image)
@@ -279,6 +282,7 @@ def autovote():
                 if json.loads(voting_list.text)['success']:
                     data = {
                         'c_id': vote.challenge_id,
+                        'c_token': '03AOLTBLRTGUYgYJnrxxxXTs3IdLq1pH3Qt5KSifNcfMz0HzdSKQYDpoag-eYaqUQaFbiKm8Yft1sBBCBE9iled0FV7HOINASN3RJCzGfnQZbhWqqaGQ3MqxIs_T2vo7zPIpH7gMmxoaF2YFhuKW8rPQCNauy6H1FQBATyHLtX0YRZongGJkCqkQL-J5N03wi-y6pgL8vIldNXUllBtwq9Hz8HbkdLoK-XU8d1Px_V_7mDpCS8pQyC1qT1Km1-NFZUHKhwVxlbZ-TBFPGRGuynNx-tkHc-0aLgZ8kMGGfkPEjkHb_aGJ9p7iEK2n94N6iLIqOzl_O2QlJ9U6J9NLnV7xTq7N4dfMrgPJuJ-T7hZWeaVXVnDKUqjDiZFVlKohcQbGyNczhgDrGcoHuUfrrcZrLk8s-ZU1_bXtQe9N0o5PGg8MtTpGd8yy-l99Fsnyn--3w623nKFDAj',
                     }
                     images = json.loads(voting_list.text)['images']
                     random_count = int(vote.vote_count)
@@ -287,12 +291,13 @@ def autovote():
                     random_numbers = random.sample(range(len(images)), random_count)
                     i = 0
                     for number in random_numbers:
-                        data['image_ids[' + str(i) + ']'] = images[number]['id']
+                        data['tokens[' + str(i) + ']'] = images[number]['token']
+                        data['viewed_tokens[' + str(i) + ']'] = images[number]['token']
                         i += 1
                     users_image_ids = get_users_image_ids()
                     for user_image in users_image_ids:
                         for list_image in images:
-                            if user_image == list_image['id']:
+                            if user_image == list_image['token']:
                                 data['image_ids[' + str(i) + ']'] = user_image
                                 i += 1
                     request_session.post(gs_vote_submit_url, data=data, headers=gs_token_headers)

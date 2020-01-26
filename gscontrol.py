@@ -476,10 +476,12 @@ def my_vote(challenge_id, url):
                 return redirect('/my/vote/' + challenge_id + '/' + url + '/')
             data = {
                 'c_id': challenge_id,
+                'c_token': '03AOLTBLRTGUYgYJnrxxxXTs3IdLq1pH3Qt5KSifNcfMz0HzdSKQYDpoag-eYaqUQaFbiKm8Yft1sBBCBE9iled0FV7HOINASN3RJCzGfnQZbhWqqaGQ3MqxIs_T2vo7zPIpH7gMmxoaF2YFhuKW8rPQCNauy6H1FQBATyHLtX0YRZongGJkCqkQL-J5N03wi-y6pgL8vIldNXUllBtwq9Hz8HbkdLoK-XU8d1Px_V_7mDpCS8pQyC1qT1Km1-NFZUHKhwVxlbZ-TBFPGRGuynNx-tkHc-0aLgZ8kMGGfkPEjkHb_aGJ9p7iEK2n94N6iLIqOzl_O2QlJ9U6J9NLnV7xTq7N4dfMrgPJuJ-T7hZWeaVXVnDKUqjDiZFVlKohcQbGyNczhgDrGcoHuUfrrcZrLk8s-ZU1_bXtQe9N0o5PGg8MtTpGd8yy-l99Fsnyn--3w623nKFDAj',
             }
             i = 0
             for image_id in request.form.getlist('images'):
-                data['image_ids[' + str(i) + ']'] = image_id
+                data['tokens[' + str(i) + ']'] = image_id
+                data['viewed_tokens[' + str(i) + ']'] = image_id
                 i += 1
             session = requests.Session()
             session.post(gs_vote_submit_url, data=data, headers=gs_token_headers)
@@ -493,7 +495,6 @@ def my_vote(challenge_id, url):
             'limit': '100',
             'url': url
         }
-        print("-----------------------------------***********************************")
         request_vote_data_response = request_session.post(gs_vote_data_url, data=vote_data, headers=gs_token_headers)
         if json.loads(request_vote_data_response.text)['success']:
             request_get_page_data = {'url': 'https://gurushots.com/challenges/my-challenges/current'}
@@ -503,14 +504,6 @@ def my_vote(challenge_id, url):
             active_challenges = sorted(json.loads(request_active_challenges_response.text)['challenges'], key=lambda k: (k['time_left']['hours'], k['time_left']['minutes'], k['time_left']['seconds']))
             voting_challenge = json.loads(request_vote_data_response.text)
             inactive_users_image_ids = my_vote_inactive_images()
-            print("+++++++++++                 1")
-            print(page_data)
-            print("+++++++++++                 2")
-            print(active_challenges)
-            print("+++++++++++                 3")
-            print(voting_challenge)
-            print("+++++++++++                 4")
-            print(inactive_users_image_ids)
             return render_template('my_vote.html', active_user=active_user, page_data=page_data, active_challenges=active_challenges, voting_challenge=voting_challenge, inactive_users_image_ids=inactive_users_image_ids)
         else:
             gs_login_data = {'login': active_user.email, 'password': active_user.password}
@@ -816,7 +809,7 @@ def open_join(challenge_id):
             challenge_request_data = {
                 'c_id': challenge_id,
                 'el': 'open_challenges',
-                'el_id': 'true',
+                'el_id': challenge_id,
             }
             profile_request_data = {}
             i = 0
