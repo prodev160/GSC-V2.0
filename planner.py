@@ -18,6 +18,7 @@ class User(Base):
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
     token = Column(String, nullable=True)
+    member_id = Column(String, nullable=True)
     is_active = Column(Boolean, default=False)
 
 class ExposureVote(Base):
@@ -78,6 +79,24 @@ class PlannedVoteImage(Base):
     image_member_id = Column(String, nullable=False)
     image_id = Column(String, nullable=False)
 
+class PlannedBoost(Base):
+    __tablename__ = 'planned_boost'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(String, nullable=False)
+    challenge_id = Column(String, nullable=False)
+    image_id = Column(String, nullable=False)
+    mode = Column(String, nullable=False)
+    unixtime = Column(String, nullable=True)
+    status = Column(String, nullable=False)
+
+class AutoVoteImage(Base):
+    __tablename__ = 'auto_vote_image'
+
+    id = Column(Integer, primary_key=True)
+    member_id = Column(String, nullable=False)
+    image_id = Column(String, nullable=False)
+
 gs_base_url = 'https://gurushots.com'
 gs_verification_url = gs_base_url + '/rest/get_member_joined_active_challenges'
 gs_login_url = gs_base_url + '/rest/signin'
@@ -85,6 +104,8 @@ gs_challenge_submit_url = gs_base_url + '/rest/submit_to_challenge'
 gs_swap_url = gs_base_url + '/rest/swap'
 gs_vote_data_url = gs_base_url + '/rest/get_vote_data'
 gs_vote_submit_url = gs_base_url + '/rest/submit_votes'
+gs_boost_url = gs_base_url + '/rest/boost_photo'
+gs_active_challenges_url = gs_base_url + '/rest/get_member_joined_active_challenges'
 gs_headers = {'X-Requested-With': 'XMLHttpRequest', 'X-Env': 'WEB', 'X-Api-Version': '8'}
 tokens_verified = False
 
@@ -111,6 +132,7 @@ def verify_tokens():
                 request_login_response = request_session.post(gs_login_url, data=gs_login_data, headers=gs_headers)
                 if json.loads(request_login_response.text)['success']:
                     user.token = json.loads(request_login_response.text)['token']
+                    user.member_id = json.loads(request_login_response.text)['member_id']
                     session.commit()
                     print('Token for user ' + str(i) + ' has been successfully updated.')
                 else:
@@ -307,6 +329,56 @@ def autovote():
     print('Exposure votes have been processed.')
     session.close()
 
+def boost_photo(user, boost):
+    gs_token_headers = gs_headers.copy()
+    gs_token_headers['X-Token'] = user.token
+    request_session = requests.Session()
+    boot_request_data = {
+        'c_id': boost.challenge_id,
+        'image_id': boost.image_id,
+    }
+    request_session = requests.Session()
+    response = request_session.post(gs_boost_url, data=boot_request_data, headers=gs_token_headers)
+    if json.loads(response.text)['success']:
+        request_session.delete(boost)
+        print('Successfully Boost the photo.')
+    else:
+        print('Not boosted the photo.')
+
+def autoboost():
+    session = Session()
+    current_time = int(time.time())
+    scheduled_boosts = session.query(PlannedBoost).filter(PlannedBoost.status == 'planned').filter(PlannedBoost.unixtime <= current_time).order_by(PlannedBoost.id)
+    print('Found ' + str(scheduled_boosts.count()) + ' scheduled boosts to process.')
+    if scheduled_boosts.count() > 0:
+        if not tokens_verified:
+            verify_tokens()
+        si = 1
+        for boost in scheduled_boosts.all():
+            print('Processing boost ' + str(si) + '...')
+            if boost.mode != 'planned_unlock' and boost.mode != 'planned_top' and boost.mode != 'planned_remaining' and boost.mode != 'planned_calendar':
+                print('boost plan mode not correct.')
+            else:
+                user = session.query(User).filter(User.id == boost.user_id).first()
+                gs_token_headers = gs_headers.copy()
+                gs_token_headers['X-Token'] = user.token
+                request_session = requests.Session()
+                request_active_challenges_response = request_session.post(gs_active_challenges_url, headers=gs_token_headers)
+                active_challenges = json.loads(request_active_challenges_response.text)['challenges']
+                for challenge in active_challenges:
+                    if challenge.id == boost.challenge_id:
+                        if boost.mode == 'planned_unlock':
+                            if challenge.boost_enable == True and challenge.boost_state != "locked":
+                                boost_photo(user, boost)
+                        elif boost.mode == 'planned_top':
+                            if challenge.member.ranking.total.rank < 200:
+                                boost_photo(user, boost)
+                        else:
+                            boost_photo(user, boost)
+            si += 1
+    print('Scheduled boosts have been processed.')
+    session.close()
+
 def get_users_image_ids():
     session = Session()
     users = session.query(User).order_by(User.id)
@@ -321,10 +393,13 @@ def get_users_image_ids():
                 challenges = json.loads(response.text)['challenges']
                 for challenge in challenges:
                     for entry in challenge['member']['ranking']['entries']:
-                        image_ids.append(entry['id'])
+                        registered_auto = session.query(AutoVoteImage).filter_by(image_id=entry['id']).first()
+                        if registered_auto:
+                            image_ids.append(entry['id'])
     return image_ids
 
 join()
 swap()
 vote()
 autovote()
+autoboost()

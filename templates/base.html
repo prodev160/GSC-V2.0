@@ -42,6 +42,9 @@
 				<li class="nav-item">
 					<a href="/open/" class="nav-link{% if request.path == '/open/' %} active{% endif %}" onclick="$('#loading-modal').modal()">Open Challenges</a>
 				</li>
+				<li class="nav-item">
+					<a href="/myphoto/" class="nav-link{% if request.path == '/myphoto/' %} active{% endif %}" onclick="$('#loading-modal').modal()">My Photos</a>
+				</li>
 			</ul>
 			{% if page_data %}
 				<span class="badge badge-light ml-auto">{{ page_data.settings.permissions.PHOTO_SWAP }} swaps</span>

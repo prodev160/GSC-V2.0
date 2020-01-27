@@ -99,40 +99,27 @@
 							{% endfor %}
 						</div>
 					</td>
-					<td>
-						<div class="row">
+				<td>
+						<div class="row mt-1">
 							<div class="btn-group btn-group-sm" role="group">
 								<a href="/my/vote/{{ challenge.id }}/{{ challenge.url }}/" class="btn btn-primary" onclick="$('#loading-modal').modal()">Vote now</a>
-								<!-- <a href="/my/vote_later/{{ challenge.id }}/{{ challenge.url }}/" class="btn btn-warning" onclick="$('#loading-modal').modal()">Vote later</a> -->
 								<button type="button" class="btn btn-warning" data-toggle="modal" data-target="#vote-later-{{ challenge.id }}">Auto Vote</button>
 							</div>
 						</div>
 
-						<div class="row mt-2">
+						<div class="row mt-3">
 							<div class="btn-group btn-group-sm" role="group">
 								<a href="/my/swap/{{ challenge.id }}/" class="btn btn-success" onclick="$('#loading-modal').modal()">Swap now</a>
 								<a href="/my/auto_swap/{{ challenge.id }}/" class="btn btn-warning" onclick="$('#loading-modal').modal()">Auto Swap</a>
 							</div>
 						</div>
 
-						{% if challenge.id|string in exposure_votes_list %}
-							{% for vote in exposure_votes %}
-								{% if vote.challenge_id|string == challenge.id|string %}
-									<div class="row mt-2">
-										<div class="btn-group btn-group-sm" role="group">
-											<button type="button" class="btn btn-info" data-toggle="modal" data-target="#autovote-{{ challenge.id }}">Vote on {{ vote.vote_percent }}%</button>
-											<a href="/my/autovote/disable/{{ challenge.id }}/" class="btn btn-secondary confirm">Disable</a>
-										</div>
-									</div>
-								{% endif %}
-							{% endfor %}
-						{% else %}
-							<div class="row mt-2">
-								<div class="btn-group btn-group-sm" role="group">
-									<button type="button" class="btn btn-info" data-toggle="modal" data-target="#autovote-{{ challenge.id }}">Enable auto-voting</button>
-								</div>
+						<div class="row mt-3">
+							<div class="btn-group btn-group-sm" role="group">
+								<a href="/my/boost/{{ challenge.id }}/{{ challenge.boost_enable }}/{{ challenge.boost_state}}/" class="btn btn-primary" onclick="$('#loading-modal').modal()">Boost now</a>
+								<a href="/my/auto_boost/{{ challenge.id }}/{{ challenge.boost_enable }}/{{ challenge.boost_state }}/" class="btn btn-warning" onclick="$('#loading-modal').modal()">Auto Boost</a>
 							</div>
-						{% endif %}
+						</div>
 					</td>
 				</tr>
 			{% endfor %}

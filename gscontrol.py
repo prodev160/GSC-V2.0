@@ -19,11 +19,13 @@ gs_active_challenges_url = gs_base_url + '/rest/get_member_joined_active_challen
 gs_top_photos_url = gs_base_url + '/rest/get_top_photos'
 gs_photos_participating_url = gs_base_url + '/rest/get_member_challenge_result'
 gs_swap_url = gs_base_url + '/rest/swap'
+gs_boost_url = gs_base_url + '/rest/boost_photo'
 gs_vote_data_url = gs_base_url + '/rest/get_vote_data'
 gs_vote_submit_url = gs_base_url + '/rest/submit_votes'
 gs_open_challenges_url = gs_base_url + '/rest/get_member_challenges'
 gs_upload_restrictions_url = gs_base_url + '/rest/get_upload_restrictions'
 gs_account_photos_url = gs_base_url + '/rest/get_photos_private'
+gs_account_photos_profile_url = gs_base_url + '/rest/get_photos_public'
 gs_upload_url = 'https://uploader.gurushots.com/rest/upload_image/'
 gs_unlock_url = gs_base_url + '/rest/key_unlock'
 gs_challenge_submit_url = gs_base_url + '/rest/submit_to_challenge'
@@ -37,6 +39,7 @@ class User(db.Model):
     email = db.Column(db.String, unique=True, nullable=False)
     password = db.Column(db.String, nullable=False)
     token = db.Column(db.String, nullable=True)
+    member_id = db.Column(db.String, nullable=True)
     is_active = db.Column(db.Boolean, default=False)
 
 class ExposureVote(db.Model):
@@ -85,6 +88,19 @@ class PlannedVoteImage(db.Model):
     image_member_id = db.Column(db.String, nullable=False)
     image_id = db.Column(db.String, nullable=False)
 
+class PlannedBoost(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String, nullable=False)
+    challenge_id = db.Column(db.String, nullable=False)
+    image_id = db.Column(db.String, nullable=False)
+    mode = db.Column(db.String, nullable=False)
+    unixtime = db.Column(db.String, nullable=True)
+    status = db.Column(db.String, nullable=False)
+
+class AutoVoteImage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    member_id = db.Column(db.String, nullable=False)
+    image_id = db.Column(db.String, nullable=False)
 
 @app.route('/', methods=['GET'])
 def users_list():
@@ -123,7 +139,7 @@ def users_add():
         if json.loads(request_login_response.text)['success']:
             user = User.query.filter_by(email=request.form['email']).first()
             if user is None:
-                user = User(email=request.form['email'], password=request.form['password'], token=json.loads(request_login_response.text)['token'])
+                user = User(email=request.form['email'], password=request.form['password'], token=json.loads(request_login_response.text)['token'], member_id=json.loads(request_login_response.text)['member_id'])
                 db.session.add(user)
                 db.session.commit()
             return redirect('/')
@@ -194,8 +210,10 @@ def vote_for_all():
                     # get all images
                     i = 1
                     for image in challenge['member']['ranking']['entries']:
-                        user_image_ids[user.id][challenge['id']]['images'][i] = image['id']
-                        i += 1
+                        registered_auto = AutoVoteImage.query.filter_by(image_id=image['id']).first()
+                        if registered_auto:
+                            user_image_ids[user.id][challenge['id']]['images'][i] = image['id']
+                            i += 1
     else:
         flash('There is no users to check.')
         return redirect('/')
@@ -223,7 +241,7 @@ def vote_for_all():
                                     i = 0
                                     for voting_image in json.loads(voting_list.text)['images']:
                                         for image in value['images']:
-                                            if value['images'][image] == voting_image['id']:
+                                            if value['images'][image] == voting_image['token']:
                                                 data['image_ids[' + str(i) + ']'] = value['images'][image]
                                                 i += 1
                                     if 'image_ids[0]' in data:
@@ -809,7 +827,7 @@ def open_join(challenge_id):
             challenge_request_data = {
                 'c_id': challenge_id,
                 'el': 'open_challenges',
-                'el_id': challenge_id,
+                'el_id': 'true',
             }
             profile_request_data = {}
             i = 0
@@ -1072,5 +1090,178 @@ def autovote_disable(challenge_id):
             flash('Autovote has been successfully disabled.')
             return redirect('/my/')
         return redirect('/my/')
+    flash('You must log in first.')
+    return redirect('/')
+
+@app.route('/myphoto/', methods=['GET', 'POST'])
+def myphoto():
+    active_user = User.query.filter_by(is_active=True).first()
+    if active_user:
+        gs_token_headers = gs_headers.copy()
+        gs_token_headers['X-Token'] = active_user.token
+        if request.method == 'POST':
+            if len(request.form.getlist('image_id')) < 1:
+                flash('You need to add at least 1 image.')
+                return redirect('/myphoto/')
+            orgin_setting = AutoVoteImage.query.filter_by(member_id=active_user.member_id).all()
+            for item in orgin_setting:
+                db.session.delete(item)
+                db.session.commit()
+            for image_id in request.form.getlist('image_id'):
+                new_autoapply = AutoVoteImage(member_id=active_user.member_id, image_id=image_id)
+                db.session.add(new_autoapply)
+                db.session.commit()
+            flash('Successfully Automatic Vote Setting Apply.')
+            return redirect('/myphoto/')
+        request_session = requests.Session()
+        items = ''
+
+        account_photos_data = {
+            'get_achievements': True,
+            'get_liked': True,
+            'get_likes': True,
+            'get_member': True,
+            'get_votes': True,
+            'limit': 80,
+            'member_id': active_user.member_id,
+            'order': 'votes',
+            'search': '',
+            'sort': 'desc',
+            'start': '0',
+            'types': 'photos'
+        }
+
+        account_photos_response = request_session.post(gs_account_photos_profile_url, data=account_photos_data, headers=gs_token_headers)
+        account_photos = []
+        if 'items' in json.loads(account_photos_response.text):
+            account_photos = json.loads(account_photos_response.text)['items']
+        request_get_page_data = {'url': 'https://gurushots.com/challenges/my-challenges/current'}
+        request_get_page_data_response = request_session.post(gs_get_page_data_url, data=request_get_page_data, headers=gs_token_headers)
+        page_data = json.loads(request_get_page_data_response.text)['items']
+        orgin_applied = AutoVoteImage.query.filter_by(member_id=active_user.member_id).all()        
+        return render_template('myphoto.html', active_user=active_user, page_data=page_data, account_photos=account_photos, orgin_applied=orgin_applied)
+    flash('You must log in first.')
+    return redirect('/')
+
+@app.route('/my/boost/<challenge_id>/<boost_enable>/<boost_state>/', methods=['GET', 'POST'])
+def my_boost(challenge_id, boost_enable, boost_state):
+    active_user = User.query.filter_by(is_active=True).first()
+    if active_user:
+        gs_token_headers = gs_headers.copy()
+        gs_token_headers['X-Token'] = active_user.token
+        if request.method == 'POST':
+            if not len(request.form.getlist('old_photo_id')) == 1:
+                flash('You need to select 1 image to boost.')
+                return redirect('/my/boost/' + challenge_id + '/' + boost_enable + '/' + boost_state + '/')
+            boot_request_data = {
+                'c_id': challenge_id,
+                'image_id': request.form.getlist('old_photo_id')[0],
+            }
+            request_session = requests.Session()
+            request_session.post(gs_boost_url, data=boot_request_data, headers=gs_token_headers)
+            flash('Successfully Boost the photo.')
+            return redirect('/my/')
+        if boost_enable == False:
+            flash('Boost not enabled on this challenge.')
+            return redirect('/my/')
+        if boost_state == "used":
+            flash('Already boost photo on this challenge.')
+            return redirect('/my/')
+
+        request_session = requests.Session()
+
+        request_get_page_data = {'url': 'https://gurushots.com/challenges/my-challenges/current'}
+        request_get_page_data_response = request_session.post(gs_get_page_data_url, data=request_get_page_data, headers=gs_token_headers)
+        page_data = json.loads(request_get_page_data_response.text)['items']
+
+        if boost_state == "locked":
+            if not json.loads(request_get_page_data_response.text)['success']:
+                flash('Can not get key count.')
+                return redirect('/my/')
+            user_key = page_data['settings']['permissions']['KEY']
+            if user_key == 0:
+                flash('You haven\'t got enough key now.')
+                return redirect('/my/')
+            unlock_request_data = {
+                'c_id': challenge_id,
+                'usage': 'EXPOSURE_BOOST'
+            }
+            gs_unlock_url_response = request_session.post(gs_unlock_url, data=unlock_request_data, headers=gs_token_headers)
+            if not json.loads(gs_unlock_url_response.text)['success']:
+                flash('Unable to unlock.')
+                return redirect('/my/')
+
+        request_active_challenges_response = request_session.post(gs_active_challenges_url, headers=gs_token_headers)
+        active_challenges = sorted(json.loads(request_active_challenges_response.text)['challenges'], key=lambda k: (k['time_left']['hours'], k['time_left']['minutes'], k['time_left']['seconds']))
+        return render_template('my_boost.html', active_user=active_user, page_data=page_data, challenge_id=challenge_id, items=active_challenges)
+    flash('You must log in first.')
+    return redirect('/')
+    
+@app.route('/my/auto_boost/<challenge_id>/<boost_enable>/<boost_state>/', methods=['GET', 'POST'])
+def my_auto_boost(challenge_id, boost_enable, boost_state):
+    active_user = User.query.filter_by(is_active=True).first()
+    if active_user:
+        gs_token_headers = gs_headers.copy()
+        gs_token_headers['X-Token'] = active_user.token
+        if request.method == 'POST':
+            if not len(request.form.getlist('old_photo_id')) == 1:
+                flash('You need to select 1 image to boost.')
+                return redirect('/my/auto_boost/' + challenge_id + '/' + boost_enable + '/' + boost_state + '/')
+            unixtime = 0
+            if 'autoboost_mode' not in request.form:
+                flash('You must choose the autoboost mode.')
+                return redirect('/my/auto_boost/' + challenge_id + '/' + boost_enable + '/' + boost_state + '/')
+            mode = request.form['autoboost_mode']
+            if mode == 'planned_remaining':
+                days = int(request.form['planned_remaining_days'])
+                hours = int(request.form['planned_remaining'].split(':')[0])
+                minutes = int(request.form['planned_remaining'].split(':')[1])
+                seconds = ((days * 24 * 60) + (hours * 60) + minutes) * 60
+                unixtime = int(request.form['close_time']) - seconds
+            elif mode == 'planned_calendar':
+                unixtime = int(request.form['planned_calendar'])
+            elif mode != 'planned_unlock' and mode != 'planned_top':
+                flash('You must choose the boost mode.')
+                return redirect('/my/auto_boost/' + challenge_id + '/' + boost_enable + '/' + boost_state + '/')
+
+            request_session = requests.Session()
+            request_get_page_data = {'url': 'https://gurushots.com/challenges/my-challenges/current'}
+            request_get_page_data_response = request_session.post(gs_get_page_data_url, data=request_get_page_data, headers=gs_token_headers)
+            page_data = json.loads(request_get_page_data_response.text)['items']
+
+            if mode != 'planned_unlock' and boost_state == "locked":
+                if not json.loads(request_get_page_data_response.text)['success']:
+                    flash('Can not get key count.')
+                    return redirect('/my/')
+                user_key = page_data['settings']['permissions']['KEY']
+                if user_key == 0:
+                    flash('You haven\'t got enough key now.')
+                    return redirect('/my/')
+                unlock_request_data = {
+                    'c_id': challenge_id,
+                    'usage': 'EXPOSURE_BOOST'
+                }
+                gs_unlock_url_response = request_session.post(gs_unlock_url, data=unlock_request_data, headers=gs_token_headers)
+                if not json.loads(gs_unlock_url_response.text)['success']:
+                    flash('Unable to unlock.')
+                    return redirect('/my/')
+
+            planned_boost = PlannedBoost(user_id=active_user.id, challenge_id=challenge_id, image_id=request.form.getlist('old_photo_id')[0], mode=mode, unixtime=unixtime, status='planned')
+            db.session.add(planned_boost)
+            db.session.commit()
+            return redirect('/my/')
+        if boost_enable == False:
+            flash('Boost not enabled on this challenge.')
+            return redirect('/my/')
+        if boost_state == "used":
+            flash('Already boost photo on this challenge.')
+            return redirect('/my/')
+        request_session = requests.Session()
+        request_active_challenges_response = request_session.post(gs_active_challenges_url, headers=gs_token_headers)
+        active_challenges = sorted(json.loads(request_active_challenges_response.text)['challenges'], key=lambda k: (k['time_left']['hours'], k['time_left']['minutes'], k['time_left']['seconds']))
+        request_get_page_data = {'url': 'https://gurushots.com/challenges/my-challenges/current'}
+        request_get_page_data_response = request_session.post(gs_get_page_data_url, data=request_get_page_data, headers=gs_token_headers)
+        page_data = json.loads(request_get_page_data_response.text)['items']
+        return render_template('my_auto_boost.html', active_user=active_user, page_data=page_data, challenge_id=challenge_id, items=active_challenges)
     flash('You must log in first.')
     return redirect('/')
