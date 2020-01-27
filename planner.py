@@ -81,7 +81,7 @@ class PlannedVoteImage(Base):
 
 class PlannedBoost(Base):
     __tablename__ = 'planned_boost'
-    
+
     id = Column(Integer, primary_key=True)
     user_id = Column(String, nullable=False)
     challenge_id = Column(String, nullable=False)
@@ -366,12 +366,17 @@ def autoboost():
                 request_active_challenges_response = request_session.post(gs_active_challenges_url, headers=gs_token_headers)
                 active_challenges = json.loads(request_active_challenges_response.text)['challenges']
                 for challenge in active_challenges:
-                    if challenge.id == boost.challenge_id:
-                        if boost.mode == 'planned_unlock':
-                            if challenge.boost_enable == True and challenge.boost_state != "locked":
-                                boost_photo(user, boost)
+                    if challenge['id'] == int(boost.challenge_id):
+                        if boost.mode=='planned_unlock':
+                            if challenge['boost_enable'] == True:
+                                if challenge['boost_state'] != "locked":
+                                    boost_photo(user, boost)
+                                else:
+                                    print('not unlocked yet')
+                            else:
+                                print('not boost enabled')
                         elif boost.mode == 'planned_top':
-                            if challenge.member.ranking.total.rank < 200:
+                            if challenge['member']['ranking']['total']['rank'] < 200:
                                 boost_photo(user, boost)
                         else:
                             boost_photo(user, boost)
