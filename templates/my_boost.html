@@ -40,7 +40,7 @@
 								</ul>
 								<div class="tab-content">
 									<div class="tab-pane fade show active pt-1" id="old_photo" role="tabpanel">
-										<select name="old_photo_id" multiple="multiple" data-limit="{{ items_limit }}" class="image-picker">
+										<select name="old_photo_id" multiple="multiple" data-limit="1" class="image-picker">
 											<option value=""></option>
 											{% for challenge in items %}
 												{% if challenge.id|string == challenge_id %}
@@ -104,7 +104,7 @@
 		const inputElement = document.querySelector('input[type="file"]');
 		const pond = FilePond.create(inputElement, {
 			name: 'file',
-			maxFiles: {{ items_limit }},
+			maxFiles: 1,
 			acceptedFileTypes: ['image/jpeg'],
 			maxFileSize: '25MB',
 			imageValidateSizeMinWidth: 700,

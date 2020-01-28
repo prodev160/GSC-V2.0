@@ -1100,46 +1100,79 @@ def myphoto():
         gs_token_headers = gs_headers.copy()
         gs_token_headers['X-Token'] = active_user.token
         if request.method == 'POST':
-            if len(request.form.getlist('image_id')) < 1:
-                flash('You need to add at least 1 image.')
-                return redirect('/myphoto/')
-            orgin_setting = AutoVoteImage.query.filter_by(member_id=active_user.member_id).all()
-            for item in orgin_setting:
-                db.session.delete(item)
-                db.session.commit()
-            for image_id in request.form.getlist('image_id'):
-                new_autoapply = AutoVoteImage(member_id=active_user.member_id, image_id=image_id)
-                db.session.add(new_autoapply)
-                db.session.commit()
-            flash('Successfully Automatic Vote Setting Apply.')
+            if 'image_id_profile' in request.form:
+                if len(request.form.getlist('image_id_profile')) < 1:
+                    flash('You need to add at least 1 image.')
+                    return redirect('/myphoto/')
+                
+                orgin_setting = AutoVoteImage.query.filter_by(member_id=active_user.member_id).all()
+                for item in orgin_setting:
+                    db.session.delete(item)
+                    db.session.commit()
+                for image_id in request.form.getlist('image_id_profile'):
+                    new_autoapply = AutoVoteImage(member_id=active_user.member_id, image_id=image_id)
+                    db.session.add(new_autoapply)
+                    db.session.commit()
+                flash('Successfully Automatic Vote Setting Apply.')
+            elif 'image_id_upload' in request.form:
+                if len(request.form.getlist('image_id_upload')) < 1:
+                    flash('You need to add at least 1 image.')
+                    return redirect('/myphoto/')
+                data = {
+                }
+                i = 0
+                for image_id in request.form.getlist('image_id_upload'):
+                    data['image_ids[' + str(i) + ']'] = image_id
+                    i += 1
+                session = requests.Session()
+                session.post(gs_add_profile_image_url, data=data, headers=gs_token_headers)
+                flash('Successfully added selected photos to profile.')
+            else:
+                flash('Not selected(Upload new images or Automatic Vote images)')
             return redirect('/myphoto/')
+
         request_session = requests.Session()
-        items = ''
 
-        account_photos_data = {
-            'get_achievements': True,
-            'get_liked': True,
-            'get_likes': True,
-            'get_member': True,
-            'get_votes': True,
-            'limit': 80,
-            'member_id': active_user.member_id,
-            'order': 'votes',
-            'search': '',
-            'sort': 'desc',
-            'start': '0',
-            'types': 'photos'
-        }
-
-        account_photos_response = request_session.post(gs_account_photos_profile_url, data=account_photos_data, headers=gs_token_headers)
-        account_photos = []
-        if 'items' in json.loads(account_photos_response.text):
-            account_photos = json.loads(account_photos_response.text)['items']
         request_get_page_data = {'url': 'https://gurushots.com/challenges/my-challenges/current'}
         request_get_page_data_response = request_session.post(gs_get_page_data_url, data=request_get_page_data, headers=gs_token_headers)
         page_data = json.loads(request_get_page_data_response.text)['items']
-        orgin_applied = AutoVoteImage.query.filter_by(member_id=active_user.member_id).all()        
-        return render_template('myphoto.html', active_user=active_user, page_data=page_data, account_photos=account_photos, orgin_applied=orgin_applied)
+
+        request_data = {'scope': 101, 'scope_id': page_data["member"]["id"]}
+        request_upload_restrictions_response = request_session.post(gs_upload_restrictions_url, data=request_data, headers=gs_token_headers)
+        if json.loads(request_upload_restrictions_response.text)['success']:
+            items_limit = json.loads(request_upload_restrictions_response.text)['items_limit']
+            upload_token = json.loads(request_upload_restrictions_response.text)['upload_token']
+
+            account_photos_data = {
+                'get_achievements': True,
+                'get_liked': True,
+                'get_likes': True,
+                'get_member': True,
+                'get_votes': True,
+                'limit': 80,
+                'member_id': active_user.member_id,
+                'order': 'votes',
+                'search': '',
+                'sort': 'desc',
+                'start': '0',
+                'types': 'photos'
+            }
+
+            account_photos_response = request_session.post(gs_account_photos_profile_url, data=account_photos_data, headers=gs_token_headers)
+            account_photos = []
+            if 'items' in json.loads(account_photos_response.text):
+                account_photos = json.loads(account_photos_response.text)['items']
+            orgin_applied = AutoVoteImage.query.filter_by(member_id=active_user.member_id).all()        
+            return render_template('myphoto.html', active_user=active_user, page_data=page_data, account_photos=account_photos, orgin_applied=orgin_applied, items_limit=items_limit, upload_token=upload_token)
+        else:
+            gs_login_data = {'login': active_user.email, 'password': active_user.password}
+            request_session = requests.Session()
+            request_session.get(gs_base_url)
+            request_login_response = request_session.post(gs_login_url, data=gs_login_data, headers=gs_headers)
+            if json.loads(request_login_response.text)['success']:
+                active_user.token = json.loads(request_login_response.text)['token']
+                db.session.commit()
+                return redirect('/my/myphoto/')
     flash('You must log in first.')
     return redirect('/')
 

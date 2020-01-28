@@ -53,7 +53,7 @@
 								</div>
 							</div>
 							<div id="image_ids"></div>
-							<button id="apply_button" type="submit" class="btn btn-success w-100">Apply AutoVote Images</button>
+							<button id="apply_button" type="submit" class="btn btn-success w-100">Upload Photos</button>
 						</form>
 					</div>
 				</div>
@@ -102,7 +102,7 @@
 
 						var image_input = document.createElement('input');
 						image_input.setAttribute('type', 'hidden');
-						image_input.setAttribute('name', 'image_id');
+						image_input.setAttribute('name', 'image_id_upload');
 						image_input.setAttribute('class', 'upload_image');
 						image_input.setAttribute('value', parsed['image_id']);
 
@@ -129,29 +129,17 @@
 		});
 	</script>
 
-	{% for item in items %}
-		{% if item.id|string == challenge_id %}
-			{% if (not item.member.submit_state == 'join_unlock') or (page_data.settings.permissions.KEY > 0) %}
-				<script type="text/javascript">
-					$('select.image-picker').change(function() {
-						$('#join_button').removeAttr('disabled');
-						document.querySelector('button[type="submit"]').removeAttribute('style');
-					});
-				</script>
-			{% endif %}
-		{% endif %}
-	{% endfor %}
-
 	<script type="text/javascript">
 		$('a#computer_tab').on('shown.bs.tab', function(e){
 			$('select.image-picker').attr('name', '');
-			$('input.upload_image').attr('name', 'image_id');
+			$('input.upload_image').attr('name', 'image_id_upload');
+			$('#apply_button').text("Upload Photos");
 		});
 	</script>
 
 	<script type="text/javascript">
 		$('a#profile_tab').on('shown.bs.tab', function(e){
-			$('select.image-picker').attr('name', 'image_id');
+			$('select.image-picker').attr('name', 'image_id_profile');
 			$('input.upload_image').attr('name', '');
 
 			$('select.image-picker').imagepicker();
@@ -162,6 +150,7 @@
 					columnWidth: 227
 				});
 			});
+			$('#apply_button').text("Apply AutoVote Images");
 		});
 	</script>
 
