@@ -3,6 +3,10 @@ import requests
 import time
 from flask import abort, flash, Flask, redirect, render_template, request
 from flask_sqlalchemy import SQLAlchemy
+# added
+import requests
+from PIL import Image
+from io import BytesIO
 
 app = Flask(__name__)
 app.config.from_mapping(
@@ -230,22 +234,33 @@ def vote_for_all():
                                 request_session = requests.Session()
                                 vote_data = {
                                     'c_id': challenge_id,
-                                    'limit': '100',
+                                    'limit': '10000',
                                     'url': user_image_ids[user.id][challenge_id]['url']
                                 }
-                                voting_list = request_session.post(gs_vote_data_url, data=vote_data, headers=gs_token_headers)
-                                if json.loads(voting_list.text)['success']:
-                                    data = {
-                                        'c_id': challenge_id,
-                                    }
-                                    i = 0
-                                    for voting_image in json.loads(voting_list.text)['images']:
-                                        for image in value['images']:
-                                            if value['images'][image] == voting_image['token']:
-                                                data['image_ids[' + str(i) + ']'] = value['images'][image]
-                                                i += 1
-                                    if 'image_ids[0]' in data:
-                                        request_session.post(gs_vote_submit_url, data=data, headers=gs_token_headers)
+                                for image in value['images']:
+                                    url = 'https://photos.gurushots.com/unsafe/0x0/' + user.member_id +'/3_' + value['images'][image] + '.jpg'
+                                    data = requests.get(url).content
+                                    im = Image.open(BytesIO(data))    
+                                    width, height = im.size
+                                    voting_list = request_session.post(gs_vote_data_url, data=vote_data, headers=gs_token_headers)
+                                    if json.loads(voting_list.text)['success']:
+                                        data = {
+                                            'c_id': challenge_id,
+                                            'c_token': '03AOLTBLRTGUYgYJnrxxxXTs3IdLq1pH3Qt5KSifNcfMz0HzdSKQYDpoag-eYaqUQaFbiKm8Yft1sBBCBE9iled0FV7HOINASN3RJCzGfnQZbhWqqaGQ3MqxIs_T2vo7zPIpH7gMmxoaF2YFhuKW8rPQCNauy6H1FQBATyHLtX0YRZongGJkCqkQL-J5N03wi-y6pgL8vIldNXUllBtwq9Hz8HbkdLoK-XU8d1Px_V_7mDpCS8pQyC1qT1Km1-NFZUHKhwVxlbZ-TBFPGRGuynNx-tkHc-0aLgZ8kMGGfkPEjkHb_aGJ9p7iEK2n94N6iLIqOzl_O2QlJ9U6J9NLnV7xTq7N4dfMrgPJuJ-T7hZWeaVXVnDKUqjDiZFVlKohcQbGyNczhgDrGcoHuUfrrcZrLk8s-ZU1_bXtQe9N0o5PGg8MtTpGd8yy-l99Fsnyn--3w623nKFDAj',
+                                        }
+                                        i = 0
+                                        for voting_image in json.loads(voting_list.text)['images']:
+                                            if width == voting_image['width'] and height == voting_image['height']:
+                                                print(voting_image['width'], voting_image['height'])
+                                                data['tokens'] = voting_image['token']
+                                                data['viewed_tokens'] = voting_image['token']
+                                                response = request_session.post(gs_vote_submit_url, data=data, headers=gs_token_headers)
+                                                print(response.text)
+                                                break
+                                    else:
+                                        print('--gs_vote_data_url--error--', voting_list.text)
+                                        if json.loads(voting_list.text)['error_code'] == 2028:
+                                            break
     flash('Voted successfully.')
     return redirect('/')
 
