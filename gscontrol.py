@@ -234,7 +234,7 @@ def vote_for_all():
                                 request_session = requests.Session()
                                 vote_data = {
                                     'c_id': challenge_id,
-                                    'limit': '10000',
+                                    'limit': '100', # 100 : image amount fetch from backend
                                     'url': user_image_ids[user.id][challenge_id]['url']
                                 }
                                 for image in value['images']:
@@ -261,6 +261,7 @@ def vote_for_all():
                                         print('--gs_vote_data_url--error--', voting_list.text)
                                         if json.loads(voting_list.text)['error_code'] == 2028:
                                             break
+                                        time.sleep(1)
     flash('Voted successfully.')
     return redirect('/')
 
