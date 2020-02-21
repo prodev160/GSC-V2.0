@@ -1165,7 +1165,7 @@ def myphoto():
                 'get_likes': True,
                 'get_member': True,
                 'get_votes': True,
-                'limit': 80,
+                'limit': 50,
                 'member_id': active_user.member_id,
                 'order': 'votes',
                 'search': '',
@@ -1190,6 +1190,37 @@ def myphoto():
                 db.session.commit()
                 return redirect('/my/myphoto/')
     flash('You must log in first.')
+    return redirect('/')
+
+@app.route('/myphoto/loadmore/<start>/', methods=['GET'])
+def myphoto_loadmore(start):
+    active_user = User.query.filter_by(is_active=True).first()
+    if active_user:
+        gs_token_headers = gs_headers.copy()
+        gs_token_headers['X-Token'] = active_user.token
+
+        photos_data = {
+            'get_achievements': True,
+            'get_liked': True,
+            'get_likes': True,
+            'get_member': True,
+            'get_votes': True,
+            'limit': 50,
+            'member_id': active_user.member_id,
+            'order': 'votes',
+            'search': '',
+            'sort': 'desc',
+            'start': start,
+            'types': 'photos'
+        }
+
+        request_session = requests.Session()
+        request_photos_data_response = request_session.post(gs_account_photos_profile_url, data=photos_data, headers=gs_token_headers)
+        if json.loads(request_photos_data_response.text)['success']:
+            account_photos = json.loads(request_photos_data_response.text)['items']
+            return json.dumps(account_photos)
+        else:
+            abort(401)
     return redirect('/')
 
 @app.route('/my/boost/<challenge_id>/<boost_enable>/<boost_state>/', methods=['GET', 'POST'])

@@ -160,9 +160,10 @@
 			var ul = document.querySelector('ul.image_picker_selector');
 			var xhr = new XMLHttpRequest();
 			var photos_start = document.querySelector('#photos_start');
-			xhr.open('GET', '/open/join_preload/{{ challenge_id }}/' + photos_start.value + '/', false);
+			xhr.open('GET', '/myphoto/loadmore/' + photos_start.value + '/', false);
 			xhr.send();
-
+			
+			console.log(xhr.responseText);
 			images = JSON.parse(xhr.responseText);
 
 			if (images.length < 50) {
